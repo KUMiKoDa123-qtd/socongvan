@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sổ Công Văn">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Sổ Công Văn</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: sổ đăng ký văn thư — mực xanh trên giấy kẻ, dấu đỏ chỉ dùng cho số đến/số văn bản. Một cột, thanh điều hướng dưới đáy. */
+:root{
+  --paper:#F2F4F1; --surface:#FFFFFF; --ink:#18212E; --muted:#5B6576; --line:#D9DDD8;
+  --blue:#1E4D8C; --blue-soft:#E4ECF7; --seal:#B42318; --seal-soft:#FBEAE7;
+  --ok:#1E7A46; --ok-soft:#E3F3E9; --warn:#9A5B00; --warn-soft:#FDF0D9;
+  --shadow:0 1px 2px rgba(24,33,46,.06),0 4px 16px rgba(24,33,46,.06);
+  --font:"Be Vietnam Pro",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#11151B; --surface:#1A2029; --ink:#E5E8ED; --muted:#98A1AF; --line:#2B333F;
+  --blue:#86AEE8; --blue-soft:#1E2B3D; --seal:#F07A6E; --seal-soft:#3A2120;
+  --ok:#6FCF97; --ok-soft:#173226; --warn:#F2B654; --warn-soft:#3A2D14;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --paper:#11151B; --surface:#1A2029; --ink:#E5E8ED; --muted:#98A1AF; --line:#2B333F;
+  --blue:#86AEE8; --blue-soft:#1E2B3D; --seal:#F07A6E; --seal-soft:#3A2120;
+  --ok:#6FCF97; --ok-soft:#173226; --warn:#F2B654; --warn-soft:#3A2D14;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45;
+  -webkit-tap-highlight-color:transparent;font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:720px;margin:0 auto}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{padding-block:10px 10px;display:flex;flex-direction:column;gap:10px}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.brand h1{margin:0;font-size:19px;font-weight:700;letter-spacing:-.01em}
+.brand .yr{font-size:13px;color:var(--muted)}
+.books{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:0 2px}
+.books::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:14px;font-weight:500;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+
+main{padding-block:14px 120px}
+.stack{display:flex;flex-direction:column;gap:12px}
+
+.banner{border-radius:12px;padding:12px 14px;font-size:14px;display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.banner p{margin:0}
+.banner.info{background:var(--blue-soft);color:var(--ink)}
+.banner.warn{background:var(--warn-soft);color:var(--ink)}
+.banner.demo{background:var(--seal-soft);color:var(--ink)}
+.banner button{flex:none;border:0;background:transparent;color:var(--blue);font-weight:600;padding:2px 0}
+
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.summary div{background:var(--surface);padding:10px 12px;min-width:0}
+.summary b{display:block;font-size:20px;font-weight:700;line-height:1.2}
+.summary span{font-size:12px;color:var(--muted)}
+.summary .alert b{color:var(--seal)}
+
+.tools{display:flex;gap:8px}
+.tools input{flex:1;min-width:0}
+.field input,.field select,.field textarea,.tools input,.tools select{
+  width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;font-size:16px;appearance:none;-webkit-appearance:none}
+.tools select{width:auto;padding-right:28px;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;background-size:5px 5px;background-repeat:no-repeat}
+.field select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 17px) 52%,calc(100% - 12px) 52%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
+textarea{resize:vertical;min-height:72px}
+
+.list{display:flex;flex-direction:column;gap:8px}
+.doc{display:flex;gap:12px;text-align:left;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.doc:active{background:var(--blue-soft)}
+.doc .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.doc .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sym{font-weight:700;font-size:16px;letter-spacing:.02em;color:var(--blue);word-break:break-word}
+.date{font-size:13px;color:var(--muted);flex:none}
+.sum{font-size:14.5px;overflow-wrap:anywhere}
+.meta{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.stamp{flex:none;width:64px;border:2px solid var(--seal);color:var(--seal);border-radius:6px;text-align:center;padding:4px 2px;align-self:flex-start;transform:rotate(-2deg)}
+.stamp small{display:block;font-size:10px;font-weight:700;letter-spacing:.12em}
+.stamp b{display:block;font-size:20px;line-height:1.1}
+.stamp i{display:block;font-style:normal;font-size:10.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;align-self:flex-start;margin-top:2px}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--seal-soft);color:var(--seal)}
+.pill.idle{background:var(--blue-soft);color:var(--blue)}
+.yearhead{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 2px 0}
+
+.empty{text-align:center;padding:36px 16px;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:12px}
+.empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+
+.fab{position:fixed;z-index:15;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(76px + env(safe-area-inset-bottom,0px));
+  border:0;background:var(--blue);color:var(--surface);border-radius:14px;padding:13px 18px;font-weight:600;font-size:15px;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px}
+.fab .n{background:rgba(255,255,255,.18);border-radius:6px;padding:0 6px}
+
+nav.bottom{position:fixed;z-index:20;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+nav.bottom .in{display:grid;grid-template-columns:repeat(3,1fr);max-width:720px;margin:0 auto}
+nav.bottom button{border:0;background:transparent;padding:10px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted);font-weight:500}
+nav.bottom button svg{width:22px;height:22px}
+nav.bottom button[aria-current="page"]{color:var(--blue)}
+
+/* Settings */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.card h2{margin:0;font-size:16px}
+.card p{margin:0;font-size:14px;color:var(--muted)}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;font-weight:600;font-size:14.5px}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:var(--surface)}
+.btn.danger{color:var(--seal);border-color:var(--seal)}
+.btn.block{width:100%}
+.bookrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.bookrow:first-of-type{border-top:0}
+.bookrow div{min-width:0}
+.bookrow b{display:block}
+.bookrow span{font-size:13px;color:var(--muted)}
+
+/* Sheet */
+.overlay{position:fixed;inset:0;z-index:40;background:rgba(10,14,20,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:720px;max-height:92%;overflow-y:auto;border-radius:18px 18px 0 0;
+  padding:8px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch}
+.sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--line);align-self:center;margin:2px 0 4px}
+.sheet h2{margin:0;font-size:18px}
+.sheet .sub{margin:-6px 0 0;font-size:13px;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:13px;font-weight:600;color:var(--muted)}
+.field .hint{font-size:12.5px;color:var(--muted)}
+.field .err{font-size:13px;color:var(--seal);font-weight:500}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2>*{min-width:0}
+.preview{border:1px dashed var(--blue);background:var(--blue-soft);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.preview span{font-size:12px;color:var(--muted)}
+.preview b{font-size:20px;color:var(--blue);letter-spacing:.02em;word-break:break-word}
+.check{display:flex;align-items:center;gap:10px;font-weight:500}
+.check input{width:22px;height:22px;accent-color:var(--blue)}
+.sheet .actions{display:flex;gap:8px;position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom,0px));background:var(--surface);padding-block:10px 0}
+.sheet .actions .btn{flex:1}
+.toast{position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:10px;font-size:14px;max-width:calc(100% - 32px);box-shadow:var(--shadow)}
+@media (max-width:360px){.grid2{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><h1 id="title">Sổ công văn</h1><span class="yr" id="today"></span></div>
+    <div class="books" id="books" role="group" aria-label="Chọn sổ"></div>
+  </div>
+</header>
+
+<main class="wrap"><div class="stack" id="view"></div></main>
+
+<button class="fab" id="fab" type="button"></button>
+
+<nav class="bottom" aria-label="Điều hướng">
+  <div class="in">
+    <button type="button" data-v="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h12M12 6l6 6-6 6"/><path d="M20 4v16"/></svg>Văn bản đi</button>
+    <button type="button" data-v="den"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H8M12 6l-6 6 6 6"/><path d="M4 4v16"/></svg>Văn bản đến</button>
+    <button type="button" data-v="cai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Cài đặt</button>
+  </div>
+</nav>
+
+<div id="layer"></div>
+
+<script>
+(function(){
+"use strict";
+const KEY = "socongvan.v1";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad = n => String(n).padStart(2, "0");
+const todayISO = () => { const d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()); };
+const fmt = iso => { if (!iso) return ""; const [y,m,d] = iso.split("-"); return d + "/" + m + "/" + y; };
+const yearOf = iso => iso ? +iso.slice(0, 4) : new Date().getFullYear();
+const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+
+const TYPES_CB = [["CV","Công văn"],["NQ","Nghị quyết"],["QĐ","Quyết định"],["BC","Báo cáo"],["TB","Thông báo"],["KH","Kế hoạch"],["CTr","Chương trình"],["TTr","Tờ trình"],["BB","Biên bản"],["GGT","Giấy giới thiệu"]];
+const TYPES_QTD = [["CV","Công văn"],["QĐ","Quyết định"],["NQ","Nghị quyết"],["BC","Báo cáo"],["TB","Thông báo"],["KH","Kế hoạch"],["TTr","Tờ trình"],["BB","Biên bản"],["GM","Giấy mời"],["HĐ","Hợp đồng"]];
+const mkTypes = arr => arr.map(([code,name]) => ({code,name}));
+
+function baseBooks(){
+  return [
+    {id:"cb", name:"Chi bộ", template:"{so}-{loai}/CB", numbering:"all", reset:"year", since:"", types:mkTypes(TYPES_CB)},
+    {id:"qtd", name:"Quỹ tín dụng", template:"{so}/{loai}-QTD", numbering:"all", reset:"year", since:"", types:mkTypes(TYPES_QTD)}
+  ];
+}
+function demoDocs(){
+  const y = new Date().getFullYear();
+  const D = (m,d) => y + "-" + pad(m) + "-" + pad(d);
+  const t = todayISO();
+  const plus = n => { const d = new Date(); d.setDate(d.getDate()+n); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); };
+  const o = (bookId,num,type,date,summary,party,signer,symbol) => ({id:uid(),bookId,dir:"di",num,type,date,summary,party,signer,symbol,note:"",created:Date.now()});
+  const i = (bookId,num,date,from,origSym,summary,handler,due,done) => ({id:uid(),bookId,dir:"den",num,date,from,origSym,origDate:date,summary,handler,due,done,note:"",created:Date.now()});
+  return [
+    o("cb",1,"KH",D(1,8),"Kế hoạch sinh hoạt chi bộ năm","Đảng ủy cấp trên; Đảng viên trong chi bộ","Bí thư chi bộ","01-KH/CB"),
+    o("cb",2,"BC",D(3,30),"Báo cáo sơ kết công tác xây dựng Đảng quý I","Đảng ủy cấp trên","Bí thư chi bộ","02-BC/CB"),
+    o("cb",3,"NQ",D(7,5),"Nghị quyết lãnh đạo nhiệm vụ 6 tháng cuối năm","Đảng viên; Lưu chi bộ","Bí thư chi bộ","03-NQ/CB"),
+    i("cb",1,D(9,22),"Đảng ủy cấp trên","145-CV/ĐU","V/v hướng dẫn đánh giá, xếp loại đảng viên cuối năm","Bí thư chi bộ",plus(2),false),
+    o("qtd",1,"QĐ",D(1,3),"Quyết định ban hành kế hoạch kinh doanh năm","Ban điều hành; Lưu VT","Chủ tịch HĐQT","01/QĐ-QTD"),
+    o("qtd",2,"BC",D(4,10),"Báo cáo tình hình hoạt động quý I gửi NHNN","NHNN chi nhánh tỉnh","Giám đốc","02/BC-QTD"),
+    o("qtd",3,"TTr",D(10,2),"Tờ trình phê duyệt quy chế kiểm soát nội bộ sửa đổi","Hội đồng quản trị","Giám đốc","03/TTr-QTD"),
+    i("qtd",1,D(8,14),"NHNN chi nhánh tỉnh","512/NHNN-TTGSNH","V/v báo cáo rà soát hệ thống kiểm soát nội bộ","Giám đốc",D(8,30),true),
+    i("qtd",2,D(10,1),"NHNN chi nhánh tỉnh","601/NHNN-TTGSNH","V/v kiểm tra công tác phòng cháy chữa cháy","Phó Giám đốc",plus(-3),false)
+  ];
+}
+function freshState(demo){ return {v:1, demo:!!demo, books:baseBooks(), docs: demo ? demoDocs() : [], lastBackup:null, hideInstall:false}; }
+
+let storageOK = true;
+function load(){
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { const s = JSON.parse(raw); if (s && Array.isArray(s.books) && Array.isArray(s.docs)) return s; }
+  } catch(e){ storageOK = false; }
+  return freshState(true);
+}
+let S = load();
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(S)); storageOK = true; return true; }
+  catch(e){ storageOK = false; toast("Không lưu được vào máy. Hãy sao lưu ngay để tránh mất dữ liệu."); return false; }
+}
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
+
+const ui = { view:"di", bookId:S.books[0] ? S.books[0].id : null, year:new Date().getFullYear(), q:"" };
+const book = () => S.books.find(b => b.id === ui.bookId) || S.books[0];
+
+/* ---------- Numbering ---------- */
+function inSeries(b, dir, year, type, d){
+  if (d.bookId !== b.id || d.dir !== dir) return false;
+  if (b.reset === "year") { if (yearOf(d.date) !== year) return false; }
+  else if (b.since) { if ((d.date || "") < b.since) return false; }
+  if (dir === "di" && b.numbering === "type" && d.type !== type) return false;
+  return true;
+}
+function nextNum(b, dir, dateISO, type, exceptId){
+  const y = yearOf(dateISO);
+  let max = 0;
+  for (const d of S.docs) if (d.id !== exceptId && inSeries(b, dir, y, type, d)) max = Math.max(max, +d.num || 0);
+  return max + 1;
+}
+function clash(b, dir, dateISO, type, num, exceptId){
+  const y = yearOf(dateISO);
+  return S.docs.find(d => d.id !== exceptId && +d.num === +num && inSeries(b, dir, y, type, d));
+}
+function makeSymbol(b, num, type, dateISO){
+  return (b.template || "{so}").replaceAll("{so}", pad(num)).replaceAll("{loai}", type || "").replaceAll("{nam}", String(yearOf(dateISO)));
+}
+
+/* ---------- Render ---------- */
+function render(){
+  const b = book();
+  $("#today").textContent = fmt(todayISO());
+  $("#books").innerHTML = S.books.map(x => `<button type="button" class="chip" data-book="${esc(x.id)}" aria-pressed="${x.id === (b && b.id)}">${esc(x.name)}</button>`).join("");
+  document.querySelectorAll("nav.bottom button").forEach(btn => { if (btn.dataset.v === ui.view) btn.setAttribute("aria-current","page"); else btn.removeAttribute("aria-current"); });
+  $("#books").hidden = ui.view === "cai";
+  if (ui.view === "cai") { $("#fab").hidden = true; renderSettings(); return; }
+  $("#fab").hidden = !b;
+  if (!b) { $("#view").innerHTML = `<div class="empty"><b>Chưa có sổ nào</b>Vào Cài đặt để tạo sổ đầu tiên.</div>`; return; }
+  renderList(b);
+}
+
+function banners(){
+  let h = "";
+  const standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+  const framed = window.self !== window.top;
+  if (!storageOK) h += `<div class="banner warn"><p><b>Máy không cho lưu dữ liệu.</b> Dữ liệu sẽ mất khi đóng ứng dụng. Hãy tắt chế độ duyệt riêng tư hoặc sao lưu ngay.</p></div>`;
+  if (!standalone && !framed && !S.hideInstall) h += `<div class="banner info"><p><b>Cài lên màn hình chính trước khi nhập dữ liệu thật.</b> Bấm nút Chia sẻ của Safari → <b>Thêm vào MH chính</b>. Dữ liệu nhập ở Safari không tự chuyển sang ứng dụng đã cài.</p><button type="button" data-act="hideInstall">Ẩn</button></div>`;
+  if (S.demo) h += `<div class="banner demo"><p><b>Đây là dữ liệu mẫu</b> để anh xem cách hoạt động. Xóa đi khi bắt đầu dùng thật.</p><button type="button" data-act="clearDemo">Xóa mẫu</button></div>`;
+  const real = !S.demo && S.docs.length > 0;
+  if (real) {
+    const days = S.lastBackup ? daysBetween(S.lastBackup.slice(0,10), todayISO()) : null;
+    if (days === null || days >= 14) h += `<div class="banner warn"><p>${days === null ? "Anh chưa sao lưu lần nào." : "Đã " + days + " ngày chưa sao lưu."} Sao lưu giúp không mất sổ khi đổi hoặc hỏng máy.</p><button type="button" data-act="backup">Sao lưu</button></div>`;
+  }
+  return h;
+}
+
+function statusOf(d){
+  if (d.done) return {cls:"ok", t:"Đã xử lý"};
+  if (!d.due) return {cls:"idle", t:"Đang xử lý"};
+  const n = daysBetween(todayISO(), d.due);
+  if (n < 0) return {cls:"bad", t:"Quá hạn " + (-n) + " ngày"};
+  if (n === 0) return {cls:"warn", t:"Hết hạn hôm nay"};
+  if (n <= 3) return {cls:"warn", t:"Còn " + n + " ngày"};
+  return {cls:"idle", t:"Hạn " + fmt(d.due)};
+}
+
+function renderList(b){
+  const dir = ui.view;
+  const all = S.docs.filter(d => d.bookId === b.id);
+  const years = [...new Set(all.map(d => yearOf(d.date)).concat([new Date().getFullYear()]))].sort((a,c) => c - a);
+  const inYear = d => ui.year === "all" || yearOf(d.date) === +ui.year;
+  const yDocs = all.filter(inYear);
+  const nDi = yDocs.filter(d => d.dir === "di").length, nDen = yDocs.filter(d => d.dir === "den").length;
+  const pending = yDocs.filter(d => d.dir === "den" && !d.done);
+  const overdue = pending.filter(d => d.due && d.due < todayISO()).length;
+
+  const q = ui.q.trim().toLowerCase();
+  let docs = all.filter(d => d.dir === dir && inYear(d));
+  if (q) docs = docs.filter(d => [d.symbol,d.summary,d.party,d.signer,d.from,d.origSym,d.handler,d.note,pad(d.num)].join(" ").toLowerCase().includes(q));
+  docs.sort((a,c) => (c.date||"").localeCompare(a.date||"") || (+c.num) - (+a.num));
+
+  let h = banners();
+  h += `<div class="summary">
+    <div><b>${nDi}</b><span>Văn bản đi</span></div>
+    <div><b>${nDen}</b><span>Văn bản đến</span></div>
+    <div class="${overdue ? "alert" : ""}"><b>${pending.length}</b><span>${overdue ? overdue + " quá hạn" : "Chờ xử lý"}</span></div>
+  </div>`;
+  h += `<div class="tools">
+    <input id="q" type="search" placeholder="Tìm số, trích yếu, nơi nhận…" value="${esc(ui.q)}" aria-label="Tìm kiếm">
+    <select id="year" aria-label="Năm"><option value="all"${ui.year==="all"?" selected":""}>Tất cả</option>${years.map(y => `<option value="${y}"${+ui.year===y?" selected":""}>${y}</option>`).join("")}</select>
+  </div>`;
+
+  if (!docs.length) {
+    h += q ? `<div class="empty"><b>Không tìm thấy</b>Thử từ khóa khác hoặc chọn “Tất cả” năm.</div>`
+           : `<div class="empty"><b>${dir === "di" ? "Chưa có văn bản đi" : "Chưa có văn bản đến"}</b>Bấm nút <b>${dir === "di" ? "Cấp số mới" : "Vào sổ đến"}</b> ở góc dưới để thêm văn bản đầu tiên.</div>`;
+  } else {
+    h += `<div class="list">`;
+    let lastY = null;
+    for (const d of docs) {
+      const y = yearOf(d.date);
+      if (ui.year === "all" && y !== lastY) { h += `<div class="yearhead">Năm ${y}</div>`; lastY = y; }
+      if (d.dir === "di") {
+        const tname = (b.types.find(t => t.code === d.type) || {}).name || d.type || "";
+        h += `<button type="button" class="doc" data-id="${d.id}"><div class="body">
+          <div class="row"><span class="sym">${esc(d.symbol)}</span><span class="date">${fmt(d.date)}</span></div>
+          <div class="sum">${esc(d.summary) || "<i>Chưa có trích yếu</i>"}</div>
+          <div class="meta">${esc(tname)}${d.party ? " · Gửi: " + esc(d.party) : ""}${d.signer ? " · Ký: " + esc(d.signer) : ""}</div>
+        </div></button>`;
+      } else {
+        const st = statusOf(d);
+        h += `<button type="button" class="doc" data-id="${d.id}">
+          <div class="stamp"><small>ĐẾN</small><b>${pad(d.num)}</b><i>${fmt(d.date).slice(0,5)}</i></div>
+          <div class="body">
+            <div class="row"><span class="sym" style="font-size:14.5px">${esc(d.origSym) || "Không số"}</span><span class="date">${fmt(d.origDate)}</span></div>
+            <div class="sum">${esc(d.summary) || "<i>Chưa có trích yếu</i>"}</div>
+            <div class="meta">${d.from ? "Từ: " + esc(d.from) : ""}${d.handler ? " · Xử lý: " + esc(d.handler) : ""}</div>
+            <span class="pill ${st.cls}">${st.t}</span>
+          </div></button>`;
+      }
+    }
+    h += `</div>`;
+  }
+  $("#view").innerHTML = h;
+
+  const fab = $("#fab");
+  if (dir === "di") {
+    const showN = b.numbering === "all" ? `<span class="n">${pad(nextNum(b, "di", todayISO(), ""))}</span>` : "";
+    fab.innerHTML = `<span aria-hidden="true">＋</span> Cấp số mới ${showN}`;
+  } else {
+    fab.innerHTML = `<span aria-hidden="true">＋</span> Vào sổ đến <span class="n">${pad(nextNum(b, "den", todayISO(), ""))}</span>`;
+  }
+}
+
+function renderSettings(){
+  const standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+  const last = S.lastBackup ? fmt(S.lastBackup.slice(0,10)) : "chưa có";
+  const realCount = S.demo ? 0 : S.docs.length;
+  let h = "";
+  h += `<div class="card"><h2>Các sổ</h2>
+    <div>${S.books.map(b => {
+      const n = S.docs.filter(d => d.bookId === b.id).length;
+      return `<div class="bookrow"><div><b>${esc(b.name)}</b><span>Mẫu ký hiệu: ${esc(makeSymbol(b, 5, (b.types[0]||{}).code || "CV", todayISO()))} · ${b.numbering === "all" ? "Một dãy số chung" : "Mỗi loại một dãy số"} · ${b.reset === "year" ? "Đánh lại từ 01 mỗi năm" : (b.since ? "Đánh lại từ " + fmt(b.since) : "Không đánh lại")} · ${n} văn bản</span></div><button type="button" class="btn" data-editbook="${esc(b.id)}">Sửa</button></div>`;
+    }).join("")}</div>
+    <button type="button" class="btn" data-act="addBook">＋ Thêm sổ</button>
+  </div>`;
+  h += `<div class="card"><h2>Sao lưu dữ liệu</h2>
+    <p>Dữ liệu chỉ nằm trong máy này. Lần sao lưu gần nhất: <b>${last}</b>. Nên sao lưu mỗi tuần và cất file vào iCloud Drive hoặc gửi qua Zalo.</p>
+    <div class="btnrow"><button type="button" class="btn primary" data-act="backup">Sao lưu toàn bộ</button><button type="button" class="btn" data-act="restore">Khôi phục</button></div>
+  </div>`;
+  h += `<div class="card"><h2>Xuất ra Excel</h2>
+    <p>Xuất sổ đang chọn thành file CSV, mở được bằng Excel hoặc Numbers để in sổ đăng ký.</p>
+    <div class="btnrow">${S.books.map(b => `<button type="button" class="btn" data-csv="${esc(b.id)}">${esc(b.name)}</button>`).join("")}</div>
+  </div>`;
+  h += `<div class="card"><h2>Cài lên iPhone</h2>
+    <p>${standalone ? "Ứng dụng đang chạy từ màn hình chính và dùng được khi không có mạng." : "Mở trang này bằng Safari, bấm nút Chia sẻ (ô vuông có mũi tên lên), chọn <b>Thêm vào MH chính</b>. Sau đó luôn mở ứng dụng từ biểu tượng trên màn hình chính."}</p>
+  </div>`;
+  h += `<div class="card"><h2>Xóa dữ liệu</h2>
+    <p>${S.demo ? "Đang có dữ liệu mẫu." : realCount + " văn bản đang lưu."}</p>
+    <button type="button" class="btn danger" data-act="wipe">Xóa toàn bộ văn bản</button>
+  </div>`;
+  $("#view").innerHTML = banners() + h;
+}
+
+/* ---------- Sheets ---------- */
+let sheetClose = null;
+function openSheet(html, onMount){
+  const layer = $("#layer");
+  layer.innerHTML = `<div class="overlay" id="ov"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;
+  const ov = $("#ov");
+  const close = () => { layer.innerHTML = ""; sheetClose = null; document.body.style.overflow = ""; };
+  sheetClose = close;
+  document.body.style.overflow = "hidden";
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
+  ov.querySelectorAll("[data-close]").forEach(x => x.addEventListener("click", close));
+  if (onMount) onMount(ov.querySelector(".sheet"), close);
+  return close;
+}
+function confirmSheet(title, text, okLabel, danger){
+  return new Promise(res => {
+    openSheet(`<h2>${esc(title)}</h2><p class="sub" style="margin:0">${text}</p>
+      <div class="actions"><button type="button" class="btn" data-close>Thôi</button><button type="button" class="btn ${danger ? "danger" : "primary"}" id="okc">${esc(okLabel)}</button></div>`,
+      (el, close) => {
+        el.querySelector("#okc").onclick = () => { close(); res(true); };
+        el.querySelectorAll("[data-close]").forEach(x => x.addEventListener("click", () => res(false)));
+        $("#ov").addEventListener("click", e => { if (e.target.id === "ov") res(false); });
+      });
+  });
+}
+let toastT;
+function toast(msg){
+  let t = $(".toast"); if (!t) { t = document.createElement("div"); t.className = "toast"; t.setAttribute("role","status"); document.body.appendChild(t); }
+  t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2600);
+}
+
+async function startNew(){
+  if (S.demo) {
+    const ok = await confirmSheet("Bắt đầu dùng thật?", "Dữ liệu mẫu sẽ được xóa để số văn bản bắt đầu đúng từ 01. Cài đặt các sổ được giữ nguyên.", "Xóa mẫu và tiếp tục");
+    if (!ok) return;
+    S.docs = []; S.demo = false; save(); render();
+  }
+  editDoc(null);
+}
+
+function editDoc(id){
+  const b = book();
+  const ex = id ? S.docs.find(d => d.id === id) : null;
+  const dir = ex ? ex.dir : ui.view;
+  const d = ex ? {...ex} : (dir === "di"
+    ? {dir, bookId:b.id, date:todayISO(), type:(b.types[0]||{}).code||"", summary:"", party:"", signer:"", note:""}
+    : {dir, bookId:b.id, date:todayISO(), from:"", origSym:"", origDate:"", summary:"", handler:"", due:"", done:false, note:""});
+  let manual = !!ex;
+  if (!ex) d.num = nextNum(b, dir, d.date, d.type);
+
+  const typeOpts = b.types.map(t => `<option value="${esc(t.code)}"${t.code===d.type?" selected":""}>${esc(t.code)} – ${esc(t.name)}</option>`).join("");
+  const head = `<h2>${ex ? "Sửa văn bản" : (dir === "di" ? "Cấp số văn bản đi" : "Vào sổ văn bản đến")}</h2><p class="sub">${esc(b.name)}</p>`;
+  const body = dir === "di" ? `
+    <div class="preview"><div><span>Số, ký hiệu</span><br><b id="pv"></b></div></div>
+    <div class="grid2">
+      <div class="field"><label for="f-type">Loại văn bản</label><select id="f-type">${typeOpts}</select></div>
+      <div class="field"><label for="f-date">Ngày ban hành</label><input id="f-date" type="date" value="${esc(d.date)}"></div>
+    </div>
+    <div class="field"><label for="f-num">Số</label><input id="f-num" type="number" inputmode="numeric" min="1" value="${esc(d.num)}"><span class="hint" id="numhint"></span><span class="err" id="numerr" hidden></span></div>
+    <div class="field"><label for="f-sum">Trích yếu nội dung</label><textarea id="f-sum" placeholder="V/v …">${esc(d.summary)}</textarea></div>
+    <div class="field"><label for="f-party">Nơi nhận</label><input id="f-party" value="${esc(d.party)}" placeholder="Đảng ủy cấp trên; Lưu VT"></div>
+    <div class="field"><label for="f-signer">Người ký</label><input id="f-signer" value="${esc(d.signer)}"></div>
+    <div class="field"><label for="f-note">Ghi chú</label><input id="f-note" value="${esc(d.note)}"></div>`
+  : `
+    <div class="grid2">
+      <div class="field"><label for="f-date">Ngày đến</label><input id="f-date" type="date" value="${esc(d.date)}"></div>
+      <div class="field"><label for="f-num">Số đến</label><input id="f-num" type="number" inputmode="numeric" min="1" value="${esc(d.num)}"></div>
+    </div>
+    <span class="err" id="numerr" hidden></span>
+    <div class="field"><label for="f-from">Nơi gửi</label><input id="f-from" value="${esc(d.from)}" placeholder="NHNN chi nhánh tỉnh"></div>
+    <div class="grid2">
+      <div class="field"><label for="f-osym">Số, ký hiệu văn bản</label><input id="f-osym" value="${esc(d.origSym)}" placeholder="512/NHNN-TTGSNH"></div>
+      <div class="field"><label for="f-odate">Ngày văn bản</label><input id="f-odate" type="date" value="${esc(d.origDate)}"></div>
+    </div>
+    <div class="field"><label for="f-sum">Trích yếu nội dung</label><textarea id="f-sum" placeholder="V/v …">${esc(d.summary)}</textarea></div>
+    <div class="grid2">
+      <div class="field"><label for="f-handler">Người xử lý</label><input id="f-handler" value="${esc(d.handler)}"></div>
+      <div class="field"><label for="f-due">Hạn xử lý</label><input id="f-due" type="date" value="${esc(d.due)}"></div>
+    </div>
+    <label class="check"><input id="f-done" type="checkbox"${d.done?" checked":""}> Đã xử lý xong</label>
+    <div class="field"><label for="f-note">Ghi chú</label><input id="f-note" value="${esc(d.note)}"></div>`;
+  const actions = `<div class="actions">${ex ? `<button type="button" class="btn danger" id="del">Xóa</button>` : `<button type="button" class="btn" data-close>Hủy</button>`}<button type="button" class="btn primary" id="sv">${ex ? "Lưu" : (dir === "di" ? "Cấp số" : "Vào sổ")}</button></div>`;
+
+  openSheet(head + body + actions, (el, close) => {
+    const g = s => el.querySelector(s);
+    const upd = () => {
+      d.date = g("#f-date").value || todayISO();
+      if (dir === "di") d.type = g("#f-type").value;
+      if (!manual) { d.num = nextNum(b, dir, d.date, d.type, ex && ex.id); g("#f-num").value = d.num; }
+      d.num = parseInt(g("#f-num").value, 10) || 0;
+      if (dir === "di") {
+        g("#pv").textContent = makeSymbol(b, d.num || 0, d.type, d.date);
+        const n = nextNum(b, dir, d.date, d.type, ex && ex.id);
+        g("#numhint").textContent = (b.numbering === "type" ? "Dãy số của loại " + d.type : "Dãy số chung của sổ") + (b.reset === "year" ? " năm " + yearOf(d.date) : "") + ". Số tiếp theo: " + pad(n) + ".";
+      }
+      const c = d.num ? clash(b, dir, d.date, d.type, d.num, ex && ex.id) : null;
+      const err = g("#numerr");
+      err.hidden = !c && d.num > 0;
+      err.textContent = !d.num ? "Số phải từ 1 trở lên." : (c ? "Số " + pad(d.num) + " đã dùng cho: " + (c.summary || c.symbol || "văn bản khác") : "");
+      return !err.hidden;
+    };
+    g("#f-date").addEventListener("change", upd);
+    if (dir === "di") g("#f-type").addEventListener("change", upd);
+    g("#f-num").addEventListener("input", () => { manual = true; upd(); });
+    upd();
+    g("#sv").onclick = () => {
+      if (upd()) { g("#f-num").focus(); return; }
+      d.summary = g("#f-sum").value.trim(); d.note = g("#f-note").value.trim();
+      if (dir === "di") {
+        d.party = g("#f-party").value.trim(); d.signer = g("#f-signer").value.trim();
+        d.symbol = makeSymbol(b, d.num, d.type, d.date);
+      } else {
+        d.from = g("#f-from").value.trim(); d.origSym = g("#f-osym").value.trim(); d.origDate = g("#f-odate").value;
+        d.handler = g("#f-handler").value.trim(); d.due = g("#f-due").value; d.done = g("#f-done").checked;
+      }
+      if (ex) Object.assign(ex, d); else { d.id = uid(); d.created = Date.now(); S.docs.push(d); }
+      S.demo = false;
+      save(); close();
+      ui.year = yearOf(d.date);
+      render();
+      toast(ex ? "Đã lưu" : (dir === "di" ? "Đã cấp số " + d.symbol : "Đã vào sổ đến số " + pad(d.num)));
+    };
+    if (ex) g("#del").onclick = async () => {
+      close();
+      const ok = await confirmSheet("Xóa văn bản này?", esc(ex.symbol || ("Số đến " + pad(ex.num))) + " sẽ bị xóa khỏi sổ. Số này sẽ để trống, không cấp lại cho văn bản khác trừ khi đây là số cuối cùng.", "Xóa", true);
+      if (!ok) { editDoc(ex.id); return; }
+      S.docs = S.docs.filter(x => x.id !== ex.id); save(); render(); toast("Đã xóa");
+    };
+  });
+}
+
+function editBook(id){
+  const ex = id ? S.books.find(b => b.id === id) : null;
+  const b = ex ? JSON.parse(JSON.stringify(ex)) : {id:uid(), name:"", template:"{so}/{loai}", numbering:"all", reset:"year", since:"", types:mkTypes([["CV","Công văn"],["QĐ","Quyết định"],["BC","Báo cáo"],["TB","Thông báo"]])};
+  const n = ex ? S.docs.filter(d => d.bookId === ex.id).length : 0;
+  openSheet(`<h2>${ex ? "Sửa sổ" : "Thêm sổ mới"}</h2>
+    <div class="field"><label for="b-name">Tên sổ</label><input id="b-name" value="${esc(b.name)}" placeholder="Ví dụ: Công đoàn"></div>
+    <div class="field"><label for="b-tpl">Mẫu số, ký hiệu</label><input id="b-tpl" value="${esc(b.template)}" autocapitalize="characters">
+      <span class="hint">{so} là số thứ tự, {loai} là viết tắt loại văn bản, {nam} là năm. Ví dụ “{so}-{loai}/CB” cho ra <b id="b-pv"></b></span></div>
+    <div class="field"><label for="b-numb">Cách đánh số văn bản đi</label><select id="b-numb">
+      <option value="all"${b.numbering==="all"?" selected":""}>Một dãy số chung cho mọi loại</option>
+      <option value="type"${b.numbering==="type"?" selected":""}>Mỗi loại văn bản một dãy số riêng</option></select></div>
+    <div class="field"><label for="b-reset">Bắt đầu lại từ số 01</label><select id="b-reset">
+      <option value="year"${b.reset==="year"?" selected":""}>Mỗi năm (từ 01/01)</option>
+      <option value="since"${b.reset==="since"?" selected":""}>Từ một ngày tôi chọn (ví dụ đầu nhiệm kỳ)</option></select></div>
+    <div class="field" id="b-sincef"><label for="b-since">Ngày bắt đầu đánh số lại</label><input id="b-since" type="date" value="${esc(b.since)}"></div>
+    <div class="field"><label for="b-types">Loại văn bản (mỗi dòng: VIẾT TẮT - Tên)</label><textarea id="b-types" rows="8">${esc(b.types.map(t => t.code + " - " + t.name).join("\n"))}</textarea></div>
+    <span class="err" id="b-err" hidden></span>
+    ${ex ? `<button type="button" class="btn danger" id="b-del">Xóa sổ này${n ? " và " + n + " văn bản" : ""}</button>` : ""}
+    <div class="actions"><button type="button" class="btn" data-close>Hủy</button><button type="button" class="btn primary" id="b-sv">Lưu</button></div>`,
+  (el, close) => {
+    const g = s => el.querySelector(s);
+    const parseTypes = () => g("#b-types").value.split("\n").map(l => l.trim()).filter(Boolean).map(l => {
+      const m = l.split(/\s*[-–:]\s*/); return {code:m[0].trim(), name:(m.slice(1).join(" - ") || m[0]).trim()};
+    }).filter(t => t.code);
+    const upd = () => {
+      const tmp = {template:g("#b-tpl").value};
+      const t = parseTypes()[0];
+      g("#b-pv").textContent = makeSymbol(tmp, 5, t ? t.code : "CV", todayISO());
+      g("#b-sincef").hidden = g("#b-reset").value !== "since";
+    };
+    ["#b-tpl","#b-types","#b-reset"].forEach(s => g(s).addEventListener("input", upd));
+    g("#b-reset").addEventListener("change", upd);
+    upd();
+    g("#b-sv").onclick = () => {
+      const err = g("#b-err");
+      b.name = g("#b-name").value.trim(); b.template = g("#b-tpl").value.trim();
+      b.numbering = g("#b-numb").value; b.reset = g("#b-reset").value; b.since = g("#b-since").value;
+      b.types = parseTypes();
+      const msg = !b.name ? "Hãy nhập tên sổ." : (!b.template.includes("{so}") ? "Mẫu ký hiệu phải có {so}." : (!b.types.length ? "Hãy nhập ít nhất một loại văn bản." : (b.reset === "since" && !b.since ? "Hãy chọn ngày bắt đầu đánh số lại." : "")));
+      if (msg) { err.textContent = msg; err.hidden = false; return; }
+      if (ex) Object.assign(ex, b); else S.books.push(b);
+      save(); close(); render(); toast("Đã lưu sổ " + b.name);
+    };
+    if (ex) g("#b-del").onclick = async () => {
+      close();
+      const ok = await confirmSheet("Xóa sổ " + ex.name + "?", n ? "Toàn bộ " + n + " văn bản trong sổ cũng bị xóa. Nên sao lưu trước." : "Sổ chưa có văn bản nào.", "Xóa sổ", true);
+      if (!ok) { editBook(ex.id); return; }
+      S.books = S.books.filter(x => x.id !== ex.id); S.docs = S.docs.filter(d => d.bookId !== ex.id);
+      ui.bookId = S.books[0] ? S.books[0].id : null; save(); render();
+    };
+  });
+}
+
+/* ---------- Export / import ---------- */
+async function deliver(name, text, mime){
+  const blob = new Blob([text], {type:mime});
+  try {
+    const file = new File([blob], name, {type:mime});
+    if (navigator.canShare && navigator.canShare({files:[file]})) { await navigator.share({files:[file], title:name}); return "ok"; }
+  } catch(e){ if (e && e.name === "AbortError") return "cancel"; }
+  try {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    return "ok";
+  } catch(e){}
+  return "fail";
+}
+function stamp(){ const d = new Date(); return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()); }
+function exportSheet(title, name, text, mime, onDone){
+  openSheet(`<h2>${esc(title)}</h2><p class="sub" style="margin:0">Bấm <b>Lưu file</b> rồi chọn <b>Lưu vào Tệp</b> (iCloud Drive) hoặc gửi qua Zalo, email. Nếu nút không mở được gì, chép nội dung bên dưới và dán vào Ghi chú.</p>
+    <div class="btnrow"><button type="button" class="btn primary" id="x-save">Lưu file ${esc(name)}</button><button type="button" class="btn" id="x-copy">Sao chép nội dung</button></div>
+    <div class="field"><textarea id="x-text" rows="6" readonly>${esc(text)}</textarea></div>
+    <div class="actions"><button type="button" class="btn" data-close>Đóng</button></div>`,
+  (el) => {
+    el.querySelector("#x-save").onclick = async () => { const r = await deliver(name, text, mime); if (r === "ok") { onDone && onDone(); toast("Đã tạo file " + name); } else if (r === "fail") toast("Máy chưa cho lưu file. Hãy dùng Sao chép nội dung."); };
+    el.querySelector("#x-copy").onclick = () => {
+      const ta = el.querySelector("#x-text");
+      const fallback = () => { ta.focus(); ta.select(); ta.setSelectionRange(0, text.length); toast("Đã chọn sẵn, bấm Sao chép trên bàn phím"); };
+      try { navigator.clipboard.writeText(text).then(() => { onDone && onDone(); toast("Đã sao chép"); }, fallback); } catch(e){ fallback(); }
+    };
+  });
+}
+function backup(){
+  const data = JSON.stringify({app:"socongvan", exported:new Date().toISOString(), ...S}, null, 1);
+  exportSheet("Sao lưu toàn bộ", "SoCongVan_saoluu_" + stamp() + ".json", data, "application/json", () => { S.lastBackup = new Date().toISOString(); save(); });
+}
+function csvOf(b){
+  const q = v => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+  const di = S.docs.filter(d => d.bookId === b.id && d.dir === "di").sort((a,c) => (a.date||"").localeCompare(c.date||"") || a.num - c.num);
+  const den = S.docs.filter(d => d.bookId === b.id && d.dir === "den").sort((a,c) => (a.date||"").localeCompare(c.date||"") || a.num - c.num);
+  const rows = [["SỔ ĐĂNG KÝ VĂN BẢN ĐI - " + b.name.toUpperCase()],["Số","Số, ký hiệu","Ngày","Loại","Trích yếu","Nơi nhận","Người ký","Ghi chú"]];
+  di.forEach(d => rows.push([pad(d.num), d.symbol, fmt(d.date), d.type, d.summary, d.party, d.signer, d.note]));
+  rows.push([], ["SỔ ĐĂNG KÝ VĂN BẢN ĐẾN - " + b.name.toUpperCase()], ["Số đến","Ngày đến","Nơi gửi","Số, ký hiệu","Ngày văn bản","Trích yếu","Người xử lý","Hạn xử lý","Tình trạng","Ghi chú"]);
+  den.forEach(d => rows.push([pad(d.num), fmt(d.date), d.from, d.origSym, fmt(d.origDate), d.summary, d.handler, fmt(d.due), d.done ? "Đã xử lý" : "Chưa xử lý", d.note]));
+  return "﻿" + rows.map(r => r.map(q).join(",")).join("\r\n");
+}
+function slug(s){ return s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g,"d").replace(/Đ/g,"D").replace(/[^A-Za-z0-9]+/g, "_"); }
+function restore(){
+  openSheet(`<h2>Khôi phục từ bản sao lưu</h2><p class="sub" style="margin:0">Chọn file .json đã sao lưu, hoặc dán nội dung sao lưu vào ô bên dưới. Dữ liệu hiện tại trong máy sẽ được thay bằng bản sao lưu.</p>
+    <div class="field"><label for="r-file">File sao lưu</label><input id="r-file" type="file" accept=".json,application/json,text/plain"></div>
+    <div class="field"><label for="r-text">Hoặc dán nội dung</label><textarea id="r-text" rows="5"></textarea></div>
+    <span class="err" id="r-err" hidden></span>
+    <div class="actions"><button type="button" class="btn" data-close>Hủy</button><button type="button" class="btn primary" id="r-go">Khôi phục</button></div>`,
+  (el, close) => {
+    const g = s => el.querySelector(s);
+    g("#r-file").addEventListener("change", e => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { g("#r-text").value = rd.result; }; rd.readAsText(f); });
+    g("#r-go").onclick = async () => {
+      let s; try { s = JSON.parse(g("#r-text").value); } catch(e){ s = null; }
+      if (!s || !Array.isArray(s.books) || !Array.isArray(s.docs)) { const er = g("#r-err"); er.textContent = "Nội dung không phải bản sao lưu của Sổ công văn. Hãy chọn đúng file .json."; er.hidden = false; return; }
+      close();
+      const ok = await confirmSheet("Thay dữ liệu bằng bản sao lưu?", "Bản sao lưu có " + s.books.length + " sổ và " + s.docs.length + " văn bản. Dữ liệu hiện tại trong máy sẽ bị thay thế.", "Khôi phục");
+      if (!ok) return;
+      S = {v:1, demo:!!s.demo, books:s.books, docs:s.docs, lastBackup:s.exported || s.lastBackup || null, hideInstall:S.hideInstall};
+      ui.bookId = S.books[0] ? S.books[0].id : null; save(); render(); toast("Đã khôi phục " + s.docs.length + " văn bản");
+    };
+  });
+}
+
+/* ---------- Events ---------- */
+document.addEventListener("click", async e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.book) { ui.bookId = t.dataset.book; render(); return; }
+  if (t.dataset.v) { ui.view = t.dataset.v; ui.q = ""; render(); window.scrollTo(0,0); return; }
+  if (t.dataset.id) { editDoc(t.dataset.id); return; }
+  if (t.dataset.editbook) { editBook(t.dataset.editbook); return; }
+  if (t.dataset.csv) { const b = S.books.find(x => x.id === t.dataset.csv); exportSheet("Xuất Excel – " + b.name, "SoCongVan_" + slug(b.name) + "_" + stamp() + ".csv", csvOf(b), "text/csv"); return; }
+  if (t.id === "fab") { startNew(); return; }
+  const act = t.dataset.act;
+  if (act === "hideInstall") { S.hideInstall = true; save(); render(); }
+  else if (act === "clearDemo") { const ok = await confirmSheet("Xóa dữ liệu mẫu?", "Các văn bản mẫu sẽ bị xóa. Cài đặt các sổ được giữ nguyên.", "Xóa mẫu", true); if (ok) { S.docs = []; S.demo = false; save(); render(); toast("Đã xóa dữ liệu mẫu"); } }
+  else if (act === "backup") backup();
+  else if (act === "restore") restore();
+  else if (act === "addBook") editBook(null);
+  else if (act === "wipe") { const ok = await confirmSheet("Xóa toàn bộ văn bản?", "Mọi văn bản trong tất cả các sổ sẽ bị xóa khỏi máy. Thao tác này không hoàn tác được. Nên sao lưu trước.", "Xóa toàn bộ", true); if (ok) { S.docs = []; S.demo = false; save(); render(); toast("Đã xóa toàn bộ"); } }
+});
+document.addEventListener("input", e => {
+  if (e.target.id === "q") { ui.q = e.target.value; const pos = e.target.selectionStart; render(); const q = $("#q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch(_){} } }
+});
+document.addEventListener("change", e => { if (e.target.id === "year") { ui.year = e.target.value === "all" ? "all" : +e.target.value; render(); } });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && sheetClose) sheetClose(); });
+
+if ("serviceWorker" in navigator && location.protocol === "https:" && window.self === window.top) {
+  window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+}
+render();
+})();
+</script>
+
+</body>
+</html>
